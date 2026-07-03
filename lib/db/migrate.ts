@@ -4,6 +4,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import path from 'path';
+import { createPoolConfig } from './pool-config';
 
 function loadEnvLocal() {
   const envPath = resolve(process.cwd(), '.env.local');
@@ -22,15 +23,14 @@ function loadEnvLocal() {
 loadEnvLocal();
 
 async function main() {
-  const connectionString = process.env.DATABASE_URL;
-  
+  const connectionString =
+    process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
+
   if (!connectionString) {
-    throw new Error('DATABASE_URL is not set');
+    throw new Error('DATABASE_URL or DATABASE_URL_UNPOOLED is not set');
   }
 
-  const pool = new Pool({
-    connectionString,
-  });
+  const pool = new Pool(createPoolConfig(connectionString));
 
   const db = drizzle(pool);
 

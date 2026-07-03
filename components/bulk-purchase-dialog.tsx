@@ -34,8 +34,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlusIcon, Trash2Icon, ShoppingCartIcon } from 'lucide-react';
+import { PlusIcon, Trash2Icon, ShoppingCartIcon, ScanBarcodeIcon } from 'lucide-react';
+import { BarcodeScanButton } from '@/components/barcode-scanner-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
+import { notifyYapePendingRefresh } from '@/components/yape-notifier';
 import { cn, formatSoles } from '@/lib/utils';
 
 type PurchaseLine = {
@@ -116,6 +119,7 @@ export function BulkPurchaseDialog({
   const [draftProductId, setDraftProductId] = useState(0);
   const [draftQuantityStr, setDraftQuantityStr] = useState('1');
   const [draftUnitPrice, setDraftUnitPrice] = useState(0);
+  const [scanCode, setScanCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const headerForm = useForm<HeaderValues>({
@@ -145,6 +149,7 @@ export function BulkPurchaseDialog({
     setDraftProductId(0);
     setDraftQuantityStr('1');
     setDraftUnitPrice(0);
+    setScanCode('');
     headerForm.reset({
       purchaseNumber: newPurchaseNumber(),
       purchaseDate: toDatetimeLocalValue(new Date()),
@@ -254,6 +259,58 @@ export function BulkPurchaseDialog({
     setDraftProductId(0);
     setDraftQuantityStr('1');
     setDraftUnitPrice(0);
+    setScanCode('');
+  };
+
+  const selectProductByCode = (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    const product = catalog.find(
+      (p) => p.code.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!product) {
+      toast.error('Producto no encontrado');
+      return;
+    }
+    setDraftProductId(product.id);
+    setDraftUnitPrice(parseFloat(String(product.unitPrice)) || 0);
+    toast.success(`${product.name} seleccionado`);
+  };
+
+  const handleScanAndAdd = (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
+    const product = catalog.find(
+      (p) => p.code.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (!product) {
+      toast.error('Producto no encontrado');
+      return;
+    }
+    const qty = parsePositiveInt(draftQuantityStr) ?? 1;
+    const price = parseFloat(String(product.unitPrice)) || 0;
+    const existingIndex = lines.findIndex((l) => l.productId === product.id);
+    if (existingIndex >= 0) {
+      setLines((prev) =>
+        prev.map((line, i) =>
+          i === existingIndex ? { ...line, quantity: line.quantity + qty } : line
+        )
+      );
+      toast.success('Cantidad sumada');
+    } else {
+      setLines((prev) => [
+        ...prev,
+        {
+          productId: product.id,
+          productName: product.name,
+          productCode: product.code,
+          quantity: qty,
+          unitPrice: price,
+        },
+      ]);
+      toast.success(`${product.name} agregado`);
+    }
+    setScanCode('');
   };
 
   const removeLine = (productId: number) => {
@@ -311,6 +368,7 @@ export function BulkPurchaseDialog({
             ? `Compra actualizada: ${formatSoles(totals.grandTotal)}`
             : `Compra registrada: ${lines.length} productos, total ${formatSoles(totals.grandTotal)}`
         );
+        notifyYapePendingRefresh();
         setOpen(false);
         if (!isEditing) resetDialog();
         onSuccess();
@@ -411,20 +469,66 @@ export function BulkPurchaseDialog({
                       addProductGridBorder
                     )}
                   >
-                    <div>
-                      <FormLabel className="text-xs text-muted-foreground mb-1 block">
-                        Producto
-                      </FormLabel>
-                      <ProductCombobox
-                        products={catalog}
-                        value={draftProductId}
-                        className={cn('h-9', softInputClass)}
-                        onSelect={(productId, unitPrice) => {
-                          setDraftProductId(productId);
-                          setDraftUnitPrice(unitPrice);
-                        }}
-                      />
-                    </div>
+                    <Tabs defaultValue="name" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2 h-8 mb-2">
+                        <TabsTrigger value="name" className="text-[10px] sm:text-xs">
+                          Por nombre
+                        </TabsTrigger>
+                        <TabsTrigger value="scan" className="text-[10px] sm:text-xs">
+                          Código / QR
+                        </TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="name" className="mt-0 space-y-2">
+                        <FormLabel className="text-xs text-muted-foreground mb-1 block">
+                          Producto
+                        </FormLabel>
+                        <ProductCombobox
+                          products={catalog}
+                          value={draftProductId}
+                          className={cn('h-9', softInputClass)}
+                          onSelect={(productId, unitPrice) => {
+                            setDraftProductId(productId);
+                            setDraftUnitPrice(unitPrice);
+                          }}
+                        />
+                      </TabsContent>
+                      <TabsContent value="scan" className="mt-0 space-y-2">
+                        <FormLabel className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                          <ScanBarcodeIcon className="w-3 h-3" />
+                          Escanear código
+                        </FormLabel>
+                        <div className="flex gap-1.5">
+                          <Input
+                            placeholder="Código QR..."
+                            className={cn(softInputClass, 'flex-1')}
+                            value={scanCode}
+                            onChange={(e) => setScanCode(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleScanAndAdd(scanCode);
+                              }
+                            }}
+                          />
+                          <BarcodeScanButton
+                            onScan={handleScanAndAdd}
+                            label=""
+                            size="icon"
+                            className="h-9 w-9 shrink-0"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 text-xs"
+                          onClick={() => selectProductByCode(scanCode)}
+                          disabled={!scanCode.trim()}
+                        >
+                          Seleccionar producto
+                        </Button>
+                      </TabsContent>
+                    </Tabs>
                     <Button
                       type="button"
                       className="gap-1 h-7 sm:h-9 w-fit px-3 text-xs sm:text-sm font-bold"

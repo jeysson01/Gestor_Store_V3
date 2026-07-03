@@ -1,13 +1,14 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AppProviders } from '@/components/app-providers'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Sistema de Inventario',
+  title: 'Store_low',
   description: 'Gestión de inventario y compras profesional',
   generator: 'v0.app',
   icons: {
@@ -37,8 +38,10 @@ export default function RootLayout({
   return (
     <html lang="es" className="bg-background">
       <body className="font-sans antialiased">
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <AppProviders>
+          {children}
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </AppProviders>
       </body>
     </html>
   )

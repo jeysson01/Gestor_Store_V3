@@ -8,6 +8,8 @@ import {
   BarChart3Icon,
   SettingsIcon,
   ChevronDownIcon,
+  MonitorIcon,
+  LogOutIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,12 +19,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { logout } from '@/lib/actions/auth';
 
 const links = [
   { href: '/', label: 'Dashboard', icon: BarChart3Icon },
   { href: '/productos', label: 'Productos', icon: PackageIcon },
   { href: '/compras', label: 'Compras', icon: ShoppingCartIcon },
   { href: '/reportes', label: 'Reportes', icon: SettingsIcon },
+  { href: '/kiosk-panel', label: 'Kiosko', icon: MonitorIcon },
 ];
 
 export function Navigation() {
@@ -99,6 +103,16 @@ export function Navigation() {
               })}
             </div>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1 text-muted-foreground shrink-0"
+            onClick={() => logout()}
+          >
+            <LogOutIcon className="w-4 h-4" />
+            <span className="hidden sm:inline text-xs">Salir</span>
+          </Button>
         </div>
       </div>
     </nav>

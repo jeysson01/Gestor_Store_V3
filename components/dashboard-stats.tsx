@@ -145,31 +145,6 @@ export function DashboardStats() {
         </Card>
       </div>
 
-      {withoutSupplier && (
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Compras sin proveedor</CardTitle>
-            <CardDescription>
-              Registros que no tienen nombre de proveedor asignado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3 bg-muted/30">
-              <div>
-                <p className="font-medium">{withoutSupplier.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {withoutSupplier.purchases} compra
-                  {withoutSupplier.purchases === 1 ? '' : 's'}
-                </p>
-              </div>
-              <p className="text-lg font-bold shrink-0">
-                {formatSoles(withoutSupplier.totalSpent)}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -212,6 +187,31 @@ export function DashboardStats() {
           )}
         </CardContent>
       </Card>
+
+      {withoutSupplier && (
+        <Card className="border-dashed">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Compras sin proveedor</CardTitle>
+            <CardDescription>
+              Registros que no tienen nombre de proveedor asignado
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3 bg-muted/30">
+              <div>
+                <p className="font-medium">{withoutSupplier.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {withoutSupplier.purchases} compra
+                  {withoutSupplier.purchases === 1 ? '' : 's'}
+                </p>
+              </div>
+              <p className="text-lg font-bold shrink-0">
+                {formatSoles(withoutSupplier.totalSpent)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

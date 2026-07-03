@@ -28,9 +28,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2Icon, PencilIcon, Trash2Icon } from 'lucide-react';
+import { Loader2Icon, PencilIcon, SmartphoneIcon, BanknoteIcon, Trash2Icon } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { PURCHASES_REFRESH_EVENT_NAME } from '@/components/yape-notifier';
 import { toast } from 'sonner';
-import { formatSoles } from '@/lib/utils';
+import { formatPurchaseDate, formatSoles } from '@/lib/utils';
 
 const dateCellClass =
   'h-12 align-middle text-base leading-none py-0 [&>span]:flex [&>span]:items-center [&>span]:min-h-[2.75rem]';
@@ -44,6 +46,8 @@ export function PurchasesList() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const visiblePurchases = purchases.filter((p) => p.status !== 'pendiente_aprobacion');
 
   const loadData = async () => {
     try {
@@ -64,6 +68,9 @@ export function PurchasesList() {
 
   useEffect(() => {
     loadData();
+    const onRefresh = () => loadData();
+    window.addEventListener(PURCHASES_REFRESH_EVENT_NAME, onRefresh);
+    return () => window.removeEventListener(PURCHASES_REFRESH_EVENT_NAME, onRefresh);
   }, []);
 
   const handleSelectPurchase = async (purchaseId: number) => {
@@ -111,15 +118,6 @@ export function PurchasesList() {
     }
   };
 
-  const formatDate = (value: string | Date) =>
-    new Date(value).toLocaleString('es-PE', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
   return (
     <Card>
       <CardHeader>
@@ -149,11 +147,12 @@ export function PurchasesList() {
                   <TableHead className="w-[120px]">Fecha</TableHead>
                   <TableHead>Proveedor</TableHead>
                   <TableHead className="text-right">Total</TableHead>
+                  <TableHead>Yape</TableHead>
                   <TableHead>Detalle</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {purchases.map((purchase) => (
+                {visiblePurchases.map((purchase) => (
                   <TableRow key={purchase.id}>
                     <TableCell>
                       <div className="flex gap-1">
@@ -181,13 +180,33 @@ export function PurchasesList() {
                     </TableCell>
                     <TableCell className="font-medium">{purchase.purchaseNumber}</TableCell>
                     <TableCell className={dateCellClass}>
-                      <span>{formatDate(purchase.purchaseDate)}</span>
+                      <span>{formatPurchaseDate(purchase.purchaseDate)}</span>
                     </TableCell>
                     <TableCell className="max-w-[160px] truncate">
                       {purchase.notes || '—'}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatSoles(purchase.totalAmount || 0)}
+                    </TableCell>
+                    <TableCell>
+                      {purchase.yapeReceivedAt ? (
+                        <Badge
+                          className={
+                            purchase.paymentMethod === 'efectivo'
+                              ? 'bg-emerald-600 hover:bg-emerald-600 gap-1'
+                              : 'bg-[#742384] hover:bg-[#742384] gap-1'
+                          }
+                        >
+                          {purchase.paymentMethod === 'efectivo' ? (
+                            <BanknoteIcon className="h-3 w-3" />
+                          ) : (
+                            <SmartphoneIcon className="h-3 w-3" />
+                          )}
+                          {purchase.paymentMethod === 'efectivo' ? 'Efectivo' : 'Yape'}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Pendiente</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -203,7 +222,7 @@ export function PurchasesList() {
               </TableBody>
             </Table>
 
-            {purchases.length === 0 && (
+            {visiblePurchases.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 No hay compras registradas. Usa &quot;Compra por mayor&quot; para crear la
                 primera.
@@ -221,7 +240,7 @@ export function PurchasesList() {
               <div>
                 <p className="text-xs text-muted-foreground">Fecha</p>
                 <p className="font-medium text-base">
-                  {formatDate(selectedPurchase.purchaseDate)}
+                  {formatPurchaseDate(selectedPurchase.purchaseDate)}
                 </p>
               </div>
               <div>

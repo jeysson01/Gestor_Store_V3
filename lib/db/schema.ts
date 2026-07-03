@@ -58,6 +58,8 @@ export const purchases = pgTable(
     actualDeliveryDate: timestamp('actual_delivery_date'),
     status: varchar('status', { length: 50 }).default('pendiente'), // pendiente, recibida, parcial, cancelada
     totalAmount: decimal('total_amount', { precision: 14, scale: 2 }).notNull(),
+    yapeReceivedAt: timestamp('yape_received_at'),
+    paymentMethod: varchar('payment_method', { length: 20 }),
     notes: text('notes'),
     createdAt: timestamp('created_at').defaultNow(),
     updatedAt: timestamp('updated_at').defaultNow(),
@@ -90,6 +92,42 @@ export const purchaseDetails = pgTable(
   (table) => ({
     purchaseIdx: index('purchase_details_purchase_idx').on(table.purchaseId),
     productIdx: index('purchase_details_product_idx').on(table.productId),
+  })
+);
+
+export const kioskCodes = pgTable(
+  'kiosk_codes',
+  {
+    id: serial('id').primaryKey(),
+    code: varchar('code', { length: 3 }).notNull(),
+    qrToken: varchar('qr_token', { length: 64 }).notNull().unique(),
+    batchId: varchar('batch_id', { length: 36 }).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    usedIp: varchar('used_ip', { length: 45 }),
+    usedDevice: varchar('used_device', { length: 128 }),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    batchIdx: index('kiosk_codes_batch_idx').on(table.batchId),
+    expiresIdx: index('kiosk_codes_expires_idx').on(table.expiresAt),
+  })
+);
+
+export const yapeNotifications = pgTable(
+  'yape_notifications',
+  {
+    id: serial('id').primaryKey(),
+    amount: decimal('amount', { precision: 14, scale: 2 }).notNull(),
+    purchaseId: integer('purchase_id').references(() => purchases.id, { onDelete: 'set null' }),
+    purchaseNumber: varchar('purchase_number', { length: 50 }),
+    yapePhone: varchar('yape_phone', { length: 20 }).default('914713706').notNull(),
+    message: text('message').notNull(),
+    source: varchar('source', { length: 30 }).default('manual').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => ({
+    createdAtIdx: index('yape_notifications_created_at_idx').on(table.createdAt),
   })
 );
 
@@ -128,6 +166,14 @@ export const productsRelations = relations(products, ({ one, many }) => ({
 
 export const purchasesRelations = relations(purchases, ({ many }) => ({
   details: many(purchaseDetails),
+  yapeNotifications: many(yapeNotifications),
+}));
+
+export const yapeNotificationsRelations = relations(yapeNotifications, ({ one }) => ({
+  purchase: one(purchases, {
+    fields: [yapeNotifications.purchaseId],
+    references: [purchases.id],
+  }),
 }));
 
 export const purchaseDetailsRelations = relations(purchaseDetails, ({ one }) => ({

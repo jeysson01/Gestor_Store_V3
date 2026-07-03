@@ -233,6 +233,35 @@ export async function updatePurchase(id: number, data: any) {
   }
 }
 
+export async function approveKioskPurchase(id: number) {
+  try {
+    const existing = await db
+      .select()
+      .from(purchases)
+      .where(eq(purchases.id, id))
+      .limit(1);
+
+    if (!existing.length) {
+      return { success: false, error: 'Compra no encontrada' };
+    }
+
+    if (existing[0].status !== 'pendiente_aprobacion') {
+      return { success: false, error: 'Esta compra no requiere aprobación' };
+    }
+
+    const result = await db
+      .update(purchases)
+      .set({ status: 'pendiente', updatedAt: new Date() })
+      .where(eq(purchases.id, id))
+      .returning();
+
+    revalidateTag('purchases');
+    return { success: true, data: result[0] };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function deletePurchase(id: number) {
   try {
     const existing = await db
@@ -337,6 +366,7 @@ export async function getPurchaseStats() {
 
     const byStatus = {
       pendiente: allPurchases.filter((p) => p.status === 'pendiente').length,
+      pendiente_aprobacion: allPurchases.filter((p) => p.status === 'pendiente_aprobacion').length,
       recibida: allPurchases.filter((p) => p.status === 'recibida').length,
       parcial: allPurchases.filter((p) => p.status === 'parcial').length,
       cancelada: allPurchases.filter((p) => p.status === 'cancelada').length,

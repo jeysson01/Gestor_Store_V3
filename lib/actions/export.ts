@@ -2,9 +2,10 @@
 
 import { db } from '@/lib/db';
 import { products, purchases, purchaseDetails } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
 import { getAllActiveProducts, upsertProductFromImport } from '@/lib/actions/products';
+import { formatPurchaseDate } from '@/lib/utils';
 
 function workbookToBase64(workbook: XLSX.WorkBook): string {
   return XLSX.write(workbook, { type: 'base64', bookType: 'xlsx' });
@@ -43,7 +44,11 @@ export async function exportProductsToExcel() {
 
 export async function exportPurchasesToExcel(statusFilter?: string | null) {
   try {
-    let purchasesData = await db.select().from(purchases).limit(10000);
+    let purchasesData = await db
+      .select()
+      .from(purchases)
+      .orderBy(desc(purchases.createdAt))
+      .limit(10000);
 
     if (statusFilter && statusFilter !== 'todos') {
       purchasesData = purchasesData.filter((p) => p.status === statusFilter);
@@ -57,8 +62,8 @@ export async function exportPurchasesToExcel(statusFilter?: string | null) {
     const worksheetPurchases = XLSX.utils.json_to_sheet(
       purchasesData.map((p) => ({
         Número: p.purchaseNumber,
-        Fecha: p.purchaseDate,
-        Proveedor: p.notes ?? '',
+        Fecha: formatPurchaseDate(p.purchaseDate),
+        Proveedor: p.notes?.trim() || '—',
         Total: p.totalAmount,
       }))
     );

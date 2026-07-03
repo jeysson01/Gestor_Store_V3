@@ -19,6 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CreateProductSchema, UpdateProductSchema } from '@/lib/validations';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader2Icon, TrashIcon, PlusIcon, PencilIcon } from 'lucide-react';
+import { BarcodeScanButton } from '@/components/barcode-scanner-dialog';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { formatSoles } from '@/lib/utils';
@@ -45,10 +46,17 @@ function ProductFormFields({ form }: { form: ReturnType<typeof useForm<ProductFo
         name="code"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Código</FormLabel>
-            <FormControl>
-              <Input placeholder="P-001" {...field} />
-            </FormControl>
+            <FormLabel>Código-QR</FormLabel>
+            <div className="flex gap-2">
+              <FormControl>
+                <Input placeholder="P-001 o escanea QR" {...field} className="flex-1" />
+              </FormControl>
+              <BarcodeScanButton
+                onScan={(code) => form.setValue('code', code, { shouldValidate: true })}
+                label="Cámara"
+                className="h-10 px-3 shrink-0"
+              />
+            </div>
             <FormMessage />
           </FormItem>
         )}
@@ -264,7 +272,7 @@ export function ProductsList() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Código</TableHead>
+                  <TableHead>Código-QR</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Categoría</TableHead>
                   <TableHead className="text-right">Precio unitario</TableHead>

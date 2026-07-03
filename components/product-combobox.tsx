@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatSoles } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -82,7 +82,9 @@ export function ProductCombobox({
                     )}
                   />
                   <span className="flex-1 truncate">{product.name}</span>
-                  <span className="text-muted-foreground text-xs ml-2">{product.code}</span>
+                  <span className="text-muted-foreground text-xs ml-2">
+                    {formatSoles(product.unitPrice)}
+                  </span>
                 </CommandItem>
               ))}
             </CommandGroup>

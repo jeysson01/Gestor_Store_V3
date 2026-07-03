@@ -17,10 +17,17 @@ export const UpdateProductSchema = CreateProductSchema.partial().extend({
   currentStock: z.number().int().optional(),
 });
 
-export const PurchaseStatusEnum = z.enum(['pendiente', 'recibida', 'parcial', 'cancelada']);
+export const PurchaseStatusEnum = z.enum([
+  'pendiente',
+  'pendiente_aprobacion',
+  'recibida',
+  'parcial',
+  'cancelada',
+]);
 
 export const PURCHASE_STATUSES = [
   { value: 'pendiente', label: 'Pendiente' },
+  { value: 'pendiente_aprobacion', label: 'Pendiente aprobación' },
   { value: 'recibida', label: 'Recibida' },
   { value: 'parcial', label: 'Parcial' },
   { value: 'cancelada', label: 'Cancelada' },
